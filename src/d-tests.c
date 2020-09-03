@@ -34,9 +34,14 @@ static INT16 const RTC_DAYS_PER_MONTH[12]		= { 31, 28, 31, 30, 31, 30, 31, 31, 3
 // $GPRMC,000231.42,A,4829.0005,N,00022.0016,E,0.16,212.28,220899,,,A*59
 
 int testGpsParsing(void);
-void getCorrectedDate(char * utcDate);
 int testFilter(void);
+int testCrc(void);
+int testCalcInt(void);
+int testParsingAce(void);
+
+
 bool GPSPointConvertUTCToUNIX(PUINT8 pu8UTCDate, PUINT8 pu8UTCTime, PUINT32 pu32Unix);
+void getCorrectedDate(char * utcDate);
 
 typedef struct
 {
@@ -47,7 +52,168 @@ typedef struct
 int main(void) {
 
 // 	testGpsParsing();
-	testFilter();
+//	testFilter();
+//	testCrc();
+//	testCalcInt();
+	testParsingAce();
+}
+
+int testCalcInt(void){
+
+UINT8 a = 5, b = 3;
+   printf("1- (double)(a/b) : %f \r\n", (double)(a/b));
+   printf("2- (double)a/b   : %f \r\n", (double)a/b);
+   printf("3- (float)a/b    : %f \r\n", (float)a/b);
+   printf("4- (float)a/b    : %.3f \r\n", (float)a/b);
+
+   return 1;
+}
+
+
+
+char *strsep(char **stringp, const char *delim) {
+    char *rv = *stringp;
+    if (rv) {
+        *stringp += strcspn(*stringp, delim);
+        if (**stringp)
+            *(*stringp)++ = '\0';
+        else
+            *stringp = 0; }
+    return rv;
+}
+
+char * __strsep (char **stringp, const char *delim)
+{
+  char *begin, *end;
+  begin = *stringp;
+  if (begin == NULL)
+    return NULL;
+  /* Find the end of the token.  */
+  end = begin + strcspn (begin, delim);
+  if (*end)
+    {
+      /* Terminate the token and set *STRINGP past NUL character.  */
+      *end++ = '\0';
+      *stringp = end;
+    }
+  else
+    /* No more delimiters; this is the last token.  */
+    *stringp = NULL;
+  return begin;
+}
+
+int testParsingAce(void)
+{
+
+
+// Parse avec strtok
+//#define T_TOK
+#ifdef T_TOK
+	char* pu8Token;
+
+	printf("test de strtok ... \r\n");
+	pu8Token = strtok((char*)buf1, (char*) ";");
+	printf(" %s \r\n", pu8Token);
+	int i = 0;
+	while(pu8Token != NULL) {
+	    i++;
+	    printf ("i=%d\tToken: len(%d)\t%s \r\n", i, strlen(pu8Token), pu8Token);
+	    pu8Token= strtok(NULL, (char *)";");
+	}
+#endif
+
+//#define T_CSPN
+#ifdef T_CSPN
+	  char str1[] = "fcba73";
+	  char keys[] = "1234567890";
+	  int j;
+	  j = strcspn (str1,keys);
+	  printf ("The first number in str is at position %d.\n",j+1);
+#endif
+
+//#define T_CHR
+#ifdef T_CHR
+	  char str2[] = "This is a sample string";
+	    char * pch;
+	    printf ("Looking for the 's' character in \"%s\"...\n",str2);
+	    pch = strchr(str2,'s');
+	    while (pch!=NULL)
+	    {
+	      printf ("found at %d\n",pch - str2 + 1);
+	      pch=strchr(pch+1,'s');
+	    }
+#endif
+
+//#define T_SEP
+#ifdef T_SEP
+
+	char *token;
+	char tmp_string[20];
+	char delimiter[] = ":";
+	strcpy ((char *)tmp_string, "1:2:3::4");
+	printf(" tmp_string : %s \r\n", tmp_string);
+	printf(" tmp_string : %s \r\n", tmp_string + 1);
+    char* t1 = (char *)tmp_string;
+	printf(" t1: %s - tmp_string: %s \r\n", t1, tmp_string);
+	t1++;
+	t1++;
+	printf(" t1: %s - tmp_string: %s \r\n", t1, tmp_string);
+	token = strsep(&t1, delimiter); // first token
+	printf(" token : %s \r\n", token);
+	int k = 0;
+	while(token != NULL) {
+	    k++;
+	    printf ("i=%d\tToken: len(%d)\t%s ", k, strlen(token), token);
+	    printf(" t1: %s - tmp_string: %s \r\n", t1, tmp_string);
+	    token = strsep(&t1, delimiter);
+	}
+	printf(" t1: %s - tmp_string: %s \r\n", t1, tmp_string);
+
+	strcpy ((char *)tmp_string, "1:2:3::4");
+    t1 = (char *)tmp_string;
+
+	token = __strsep(&t1, delimiter); // first token
+	printf(" token : %s \r\n", token);
+	k = 0;
+	while(token != NULL) {
+	    k++;
+	    printf ("i=%d\tToken: len(%d)\t%s ", k, strlen(token), token);
+	    printf(" t1: %s - tmp_string: %s \r\n", t1, tmp_string);
+	    token = __strsep(&t1, delimiter);
+	}
+#endif
+
+   char buf0[] = {"0;10;1556036;0521132;5"};
+   char buf1[] = {"1;10;1556036;0521132;5;aceelectronic.ca;0000783FFF24;8888888888888888"};
+   char buf2[] = {"8;aceelectronic.ca;0000783FFF24;;5;1617088;0521132;0;;1.0;;30;8;;;;;;20;0;2462;;;246;5394375;;1910;;36;0;;;;;;;02MAT A;;;;;;;;;;;;;;;;U3V46R0H21;M2-G0-DP1-DS1-SS00OFF"};
+   puts("Ace parsing test - unit tests ... \r\n");
+   printf("buf0: %s \n", buf0);
+   printf("buf1: %s \n", buf1);
+   printf("buf2: %s \n", buf2);
+
+
+
+   char* t2 = (char *)buf0;
+   char sep[] = ";";
+   char* token = strsep(&t2, sep);
+   printf(" token: %s   \r\n", token);
+   int pr = atoi(token);
+   switch(pr)
+   {
+   case 0 :
+	   printf("case 0: ------");
+	   break;
+   case 1 :
+	   printf("case 1: ------");
+	   break;
+   case 8 :
+	   printf("case 8: ------");
+	   break;
+   default:
+	   printf("not supported \r\n");
+	   break;
+   }
+	return 1;
 }
 
 int testFilter(void){
@@ -66,6 +232,116 @@ int testFilter(void){
 	}
 
 	return 1;
+}
+
+///* http://www.ccsinfo.com/forum/viewtopic.php?t=24977 */
+unsigned short crc16(const unsigned char *buf, unsigned long count)
+{
+//        unsigned short crc = 0;
+        unsigned short crc = 0xFFFF;
+        int i;
+        int j = 0, k = 0;
+        while(count--) {
+                printf(" %d 0x%x 0x%x - ", crc, crc, *buf);
+                crc = crc ^ *buf++ << 8;
+
+                for (i=0; i<8; i++) {
+                        if (crc & 0x8000) {
+                                crc = crc << 1 ^ 0x1021;
+                                j++;
+                        } else {
+                                crc = crc << 1;
+                                k++;
+                        }
+                }
+        }
+        printf("\n ---------------- %d %d \n", j, k);
+        return crc;
+}
+
+void VimsAsciiToHex(PUINT8 pu8RxData, PUINT8 pu8Size)
+{
+	UINT32 u32TempData;
+	UINT8 u8Index;
+
+	for(u8Index =0; u8Index < *pu8Size; u8Index += 2)
+	{
+		sscanf((char*)(pu8RxData + u8Index), "%2x", &u32TempData);
+		*(pu8RxData + (u8Index/2)) = (UINT8)u32TempData;
+	}
+	*pu8Size /= 2;
+}
+
+int testCrc(void){
+// \0010;10;1556036;0521132;5\r\n2476\004
+const unsigned char buf1[] = {0x30,  0x3b, 0x31, 0x30, 0x3b, 0x31, 0x35, 0x35,  0x36, 0x30, 0x33, 0x36, 0x3b, 0x30, 0x35, 0x32, 0x31, 0x31, 0x33, 0x32, 0x3b, 0x35, 0x0d, 0x0a};
+
+// 8;aceelectronic.ca;123456789123;;5;1556036;0521132;0;;0.0;;0;0;;0;;;;20;0;0;;;0;0;;0;;0;0;;;;;;;02MAT A", ';' <repeats 16 times>, "U3V46R0H21;M0-G0-DP1-DS1-SS00OFF\r\n
+const unsigned char buf2[] = {0x38, 0x3b, 0x61, 0x63, 0x65, 0x65, 0x6c, 0x65 , 0x63, 0x74, 0x72, 0x6f, 0x6e, 0x69, 0x63, 0x2e,
+		0x63, 0x61, 0x3b, 0x31, 0x32, 0x33, 0x34, 0x35,  0x36, 0x37, 0x38, 0x39, 0x31, 0x32, 0x33, 0x3b,
+		0x3b, 0x35, 0x3b, 0x31, 0x35, 0x35, 0x36, 0x30 , 0x33, 0x36, 0x3b, 0x30, 0x35, 0x32, 0x31, 0x31,
+		0x33, 0x32, 0x3b, 0x30, 0x3b, 0x3b, 0x30, 0x2e , 0x30, 0x3b, 0x3b, 0x30, 0x3b, 0x30, 0x3b, 0x3b,
+		0x30, 0x3b, 0x3b, 0x3b, 0x3b, 0x32, 0x30, 0x3b,  0x30, 0x3b, 0x30, 0x3b, 0x3b, 0x3b, 0x30, 0x3b,
+		0x30, 0x3b, 0x3b, 0x30, 0x3b, 0x3b, 0x30, 0x3b,  0x30, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b,
+		0x30, 0x32, 0x4d, 0x41, 0x54, 0x20, 0x41, 0x3b,  0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b,
+		0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x55,  0x33, 0x56, 0x34, 0x36, 0x52, 0x30, 0x48, 0x32,
+		0x31, 0x3b, 0x4d, 0x30, 0x2d, 0x47, 0x30, 0x2d,  0x44, 0x50, 0x31, 0x2d, 0x44, 0x53, 0x31, 0x2d,
+		0x53, 0x53, 0x30, 0x30, 0x4f, 0x46, 0x46, 0x0d, 0x0a};
+
+// \0018;aceelectronic.ca;123456789123;;5;1556036;0521132;0;;0.0;;0;0;;0;;;;20;0;0;;;0;0;;0;;0;0;;;;;;;02MAT A", ';' <repeats 16 times>, "U3V46R0H21;M0-G0-DP1-DS1-SS00OFF\r\n6777\004
+const unsigned char buf3[] = {0x01, 0x38, 0x3b, 0x61, 0x63, 0x65, 0x65, 0x6c, 0x65 , 0x63, 0x74, 0x72, 0x6f, 0x6e, 0x69, 0x63, 0x2e,
+		0x63, 0x61, 0x3b, 0x31, 0x32, 0x33, 0x34, 0x35,  0x36, 0x37, 0x38, 0x39, 0x31, 0x32, 0x33, 0x3b,
+		0x3b, 0x35, 0x3b, 0x31, 0x35, 0x35, 0x36, 0x30 , 0x33, 0x36, 0x3b, 0x30, 0x35, 0x32, 0x31, 0x31,
+		0x33, 0x32, 0x3b, 0x30, 0x3b, 0x3b, 0x30, 0x2e , 0x30, 0x3b, 0x3b, 0x30, 0x3b, 0x30, 0x3b, 0x3b,
+		0x30, 0x3b, 0x3b, 0x3b, 0x3b, 0x32, 0x30, 0x3b,  0x30, 0x3b, 0x30, 0x3b, 0x3b, 0x3b, 0x30, 0x3b,
+		0x30, 0x3b, 0x3b, 0x30, 0x3b, 0x3b, 0x30, 0x3b,  0x30, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b,
+		0x30, 0x32, 0x4d, 0x41, 0x54, 0x20, 0x41, 0x3b,  0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b,
+		0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x3b, 0x55,  0x33, 0x56, 0x34, 0x36, 0x52, 0x30, 0x48, 0x32,
+		0x31, 0x3b, 0x4d, 0x30, 0x2d, 0x47, 0x30, 0x2d,  0x44, 0x50, 0x31, 0x2d, 0x44, 0x53, 0x31, 0x2d,
+		0x53, 0x53, 0x30, 0x30, 0x4f, 0x46, 0x46, 0x0d, 0x0a, 0x36, 0x37, 0x37, 0x37, 0x04};
+
+unsigned char buf4[4] = {0};
+
+  int res1 = crc16(buf1, sizeof(buf1));
+  printf(" buf size:  %d res : %d 0x%x \n", sizeof(buf1), res1, res1);
+
+  printf("\n\n");
+
+  int res2 = crc16(buf2, sizeof(buf2));
+  printf(" buf size:  %d res : %d 0x%x \n", sizeof(buf2), res2, res2);
+
+  int res3 = crc16(buf3 +1, sizeof(buf3) -6);
+   printf(" buf size:  %d res : %d 0x%x \n", sizeof(buf3), res3, res3);
+
+  const char st1[] = {'6', '7', '7', '7', '\0'};
+  printf(" 1-  %s \n", st1);
+ // VimsAsciiToHex(st, &size);
+  printf(" 2-  %d  \n", atoi(st1));
+  int number1 = (int)strtol(st1, NULL, 16);
+  printf(" 3-  %d  \n", number1);
+
+  const char st2[] = {',', '!', '7', '-', '\0'};
+  int number2 = (int)strtol(st2, NULL, 16);
+  printf(" 4-  %d  \n", number2);
+
+
+  memcpy(buf4, buf3 + (sizeof(buf3) -5), 4);
+  int number3 = (int)strtol((const char *)buf4, NULL, 16);
+  printf(" 5-  0x%x  \n", number3);
+
+  const char src[50] = "http://www.tutorialspoint.com";
+  char dest1[50];
+  char dest2[5] = {0};
+  strcpy(dest1,"Heloooo!!");
+  printf("Before memcpy dest = %s\n", dest1);
+
+  memcpy(dest1, (src + 5), strlen(src)+1);
+  memcpy(dest2, (buf3 + (sizeof(buf3) -5)), 4);
+
+  printf("After memcpy dest1 = %s\n", dest1);
+  printf("After memcpy dest2 = %s\n", dest2);
+
+  return 0;
 }
 
 int testGpsParsing(void)
