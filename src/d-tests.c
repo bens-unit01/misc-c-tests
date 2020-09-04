@@ -112,7 +112,7 @@ void aceParseData(char* in)
    switch(pr)
    {
    case 0 :
-	   printf("case 0: ------ \n");
+	   // Time synchronization record
        token = strsep(&t2, sep);
        printf(" Version: %s   \r\n", token);
 
@@ -132,10 +132,158 @@ void aceParseData(char* in)
        token = strsep(&t2, sep);
 	   break;
    case 1 :
+	   // Standard header record
 	   printf("case 1: ------\n");
+
+       token = strsep(&t2, sep);
+       printf(" Version: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" SysTime: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" SysDate: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" Source: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" ManufID: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" EquipID: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" DriverID: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" Check: %s   \r\n", token);
+
 	   break;
    case 8 :
+	   // Spreader data record
 	   printf("case 8: ------\n");
+
+       token = strsep(&t2, sep);
+       printf(" ManufID: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" EquipID: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       printf(" Source: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SysTime: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SysDate: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SprMode: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep); // SprSimSpd
+       token = strsep(&t2, sep); // SprWidthSet
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep); // SprDosSet
+       token = strsep(&t2, sep);
+       printf(" SprWidth: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       printf(" SprDosRes1: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       printf(" SprBrinePerc: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SprMaxOn: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SprCntRes1: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       printf(" SprCntBrineKg: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SprCntLen: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       printf(" DrivenLen: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       printf(" VehSpd: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SprErr: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SprErrCode: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" SprErrRpt: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       printf(" SprMatRes1: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       token = strsep(&t2, sep);
+       printf(" FreeDef1: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" FreeDef2: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+       printf(" Check: %s   \r\n", token);
+
+
+
 	   break;
    default:
 	   printf("not supported \r\n");
