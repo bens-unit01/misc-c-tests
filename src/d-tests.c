@@ -88,18 +88,60 @@ char * __strsep (char **stringp, const char *delim)
   begin = *stringp;
   if (begin == NULL)
     return NULL;
-  /* Find the end of the token.  */
+  // Find the end of the token.
   end = begin + strcspn (begin, delim);
   if (*end)
     {
-      /* Terminate the token and set *STRINGP past NUL character.  */
+//       Terminate the token and set *STRINGP past NUL character.
       *end++ = '\0';
       *stringp = end;
     }
   else
-    /* No more delimiters; this is the last token.  */
+    // No more delimiters; this is the last token.
     *stringp = NULL;
   return begin;
+}
+
+void aceParseData(char* in)
+{
+   char* t2 = in;
+   char sep[] = ";";
+   char* token = strsep(&t2, sep);
+   printf(" token: %s   \r\n", token);
+   int pr = atoi(token);
+   switch(pr)
+   {
+   case 0 :
+	   printf("case 0: ------ \n");
+       token = strsep(&t2, sep);
+       printf(" Version: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" SysTime: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" SysDate: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" Source: %s   \r\n", token);
+
+       token = strsep(&t2, sep);
+       printf(" check: %s   \r\n", token);
+
+
+       token = strsep(&t2, sep);
+	   break;
+   case 1 :
+	   printf("case 1: ------\n");
+	   break;
+   case 8 :
+	   printf("case 8: ------\n");
+	   break;
+   default:
+	   printf("not supported \r\n");
+	   break;
+   }
+
 }
 
 int testParsingAce(void)
@@ -191,28 +233,10 @@ int testParsingAce(void)
    printf("buf1: %s \n", buf1);
    printf("buf2: %s \n", buf2);
 
+   aceParseData((char *)buf0);
+   aceParseData((char *)buf1);
+   aceParseData((char *)buf2);
 
-
-   char* t2 = (char *)buf0;
-   char sep[] = ";";
-   char* token = strsep(&t2, sep);
-   printf(" token: %s   \r\n", token);
-   int pr = atoi(token);
-   switch(pr)
-   {
-   case 0 :
-	   printf("case 0: ------");
-	   break;
-   case 1 :
-	   printf("case 1: ------");
-	   break;
-   case 8 :
-	   printf("case 8: ------");
-	   break;
-   default:
-	   printf("not supported \r\n");
-	   break;
-   }
 	return 1;
 }
 
