@@ -104,184 +104,219 @@ char * __strsep (char **stringp, const char *delim)
 
 void aceParseData(char* in)
 {
-   char* t2 = in;
-   char sep[] = ";";
-   char* token = strsep(&t2, sep);
+   char* szInputString = in;
+   char szSeparator[] = ";";
+   char* token = strsep(&szInputString, szSeparator);
    printf(" token: %s   \r\n", token);
    int pr = atoi(token);
+   UINT8 u8ComposedParams1 = 0;
+   UINT8 u8ComposedParams2 = 0;
+
    switch(pr)
    {
    case 0 :
 	   // Time synchronization record
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" Version: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" SysTime: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" SysDate: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" Source: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" check: %s   \r\n", token);
 
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
 	   break;
    case 1 :
 	   // Standard header record
 	   printf("case 1: ------\n");
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" Version: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" SysTime: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" SysDate: %s   \r\n", token);
 
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" Source: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" ManufID: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" EquipID: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" DriverID: %s   \r\n", token);
 
-       token = strsep(&t2, sep);
+       token = strsep(&szInputString, szSeparator);
        printf(" Check: %s   \r\n", token);
 
 	   break;
    case 8 :
 	   // Spreader data record
-	   printf("case 8: ------\n");
+             printf("case 8: ------\n");
+             token = strsep(&szInputString, szSeparator);
+             printf("(ManufID: %s ", token);
 
-       token = strsep(&t2, sep);
-       printf(" ManufID: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             printf("EquipID: %s ", token);
 
-       token = strsep(&t2, sep);
-       printf(" EquipID: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             printf("Source: %s ", token);
 
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       printf(" Source: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             printf("SysTime: %s ", token);
 
+             token = strsep(&szInputString, szSeparator);
+             printf("SysDate: %s ", token);
 
-       token = strsep(&t2, sep);
-       printf(" SysTime: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             UINT8 u8SprMode = atoi(token);
+             if(u8SprMode <= 5)
+             {
+                 u8ComposedParams2 &= ~(0x07); // resetting the old value
+                 u8ComposedParams2 |= u8SprMode; // setting the new value
+             }
+             printf("SprMode: %s %d ", token, u8ComposedParams2);
 
+             token = strsep(&szInputString, szSeparator); // SprSimSpd
+             token = strsep(&szInputString, szSeparator); // SprWidthSet
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator); // SprDosSet
+             token = strsep(&szInputString, szSeparator);
+             INT16 u16SprWidth = atoi(token);
+             printf("SprWidth: %s %d ", token, u16SprWidth);
 
-       token = strsep(&t2, sep);
-       printf(" SysDate: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             INT16 u16SprDosRes1 = atoi(token);
+             printf("SprDosRes1: %s %d ", token, u16SprDosRes1);
 
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             printf("SprBrinePerc: %s ", token);
+             UINT8 u8SprBrinePerc = atoi(token);
 
-       token = strsep(&t2, sep);
-       printf(" SprMode: %s   \r\n", token);
-
-
-       token = strsep(&t2, sep); // SprSimSpd
-       token = strsep(&t2, sep); // SprWidthSet
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep); // SprDosSet
-       token = strsep(&t2, sep);
-       printf(" SprWidth: %s   \r\n", token);
-
-
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       printf(" SprDosRes1: %s   \r\n", token);
-
-
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       printf(" SprBrinePerc: %s   \r\n", token);
-
-
-       token = strsep(&t2, sep);
-       printf(" SprMaxOn: %s   \r\n", token);
-
-
-       token = strsep(&t2, sep);
-       printf(" SprCntRes1: %s   \r\n", token);
-
-
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       printf(" SprCntBrineKg: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             UINT8 u8SprMaxOn = atoi(token);
+             u8ComposedParams2 &= ~(0x40); // resetting the old value
+             u8ComposedParams2 |= u8SprMaxOn << 6; // setting the new value
+             printf("SprMaxOn: %s %d ", token, u8ComposedParams2);
 
 
-       token = strsep(&t2, sep);
-       printf(" SprCntLen: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             printf("SprCntRes1: %s  ", token);
+             UINT32 u32SprCntRes1 = atoi(token);
 
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             printf("SprCntBrineKg: %s ", token);
+             UINT32 u32SprCntBrineKg = atoi(token);
 
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       printf(" DrivenLen: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             printf("SprCntLen: %s  ", token);
+             UINT32 u32SprCntLen = atoi(token);
 
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             printf("DrivenLen: %s ", token);
 
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       printf(" VehSpd: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             printf("VehSpd: %s ", token);
 
+             token = strsep(&szInputString, szSeparator);
+             printf("SprErr: %s ", token);
 
-       token = strsep(&t2, sep);
-       printf(" SprErr: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             printf("SprErrCode: %s ", token);
 
+             token = strsep(&szInputString, szSeparator);
+             printf("SprErrRpt: %s ", token);
 
-       token = strsep(&t2, sep);
-       printf(" SprErrCode: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             char szSprMatRes1[25];
+             strcpy((char *) szSprMatRes1, token);
+             UINT8 u8SprMatRes1Code = 2;
+             if(strcmp((char *)szSprMatRes1, "00SEL") == 0 || strcmp((char *)szSprMatRes1, "01SABLE") == 0)
+    		 {
+                 u8SprMatRes1Code = (UINT8)(szSprMatRes1[1] - '0');
+    	     }
+             u8ComposedParams2 &= ~(0x38); // resetting the old value
+             u8ComposedParams2 |=  u8SprMatRes1Code << 3;// setting the new value
+             printf("SprMatRes1: %s  %d ", token, u8ComposedParams2);
 
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             token = strsep(&szInputString, szSeparator);
+             printf("FreeDef1: %s ", token);
 
-       token = strsep(&t2, sep);
-       printf(" SprErrRpt: %s   \r\n", token);
+             token = strsep(&szInputString, szSeparator);
+             char szFreeDef2[25];
+             strcpy((char *) szFreeDef2, token);
+             if(token != NULL)
+             {
+                char szFreeDef2[25];
+                strcpy((char *) szFreeDef2, token);
+                if(szFreeDef2[1] >= '0' && szFreeDef2[1] <= '2')
+                {
+                  u8ComposedParams1 &= ~(0x03); // resetting the old value
+                  u8ComposedParams1 |= (UINT8)(szFreeDef2[1] - '0'); // setting the new value
+                }
 
+                if(szFreeDef2[8] >= '0' && szFreeDef2[8] <= '3')
+                {
+                  u8ComposedParams1 &= ~(0x0C); // resetting the old value
+                  u8ComposedParams1 |= ((UINT8)(szFreeDef2[1] - '0')) << 2; // setting the new value
+                }
 
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       printf(" SprMatRes1: %s   \r\n", token);
+                if(szFreeDef2[12] == '0' || szFreeDef2[12] == '1')
+                {
+                  u8ComposedParams1 &= ~(0x10); // resetting the old value
+                  u8ComposedParams1 |= ((UINT8)(szFreeDef2[1] - '0')) << 4; // setting the new value
+                }
 
+                if(szFreeDef2[17] == '0' || szFreeDef2[17] == '1')
+                {
+                  u8ComposedParams1 &= ~(0x20); // resetting the old value
+                  u8ComposedParams1 |= ((UINT8)(szFreeDef2[1] - '0')) << 5; // setting the new value
+                }
+             printf("FreeDef2: %s %d ", token, u8ComposedParams1);
 
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       token = strsep(&t2, sep);
-       printf(" FreeDef1: %s   \r\n", token);
-
-
-       token = strsep(&t2, sep);
-       printf(" FreeDef2: %s   \r\n", token);
-
-
-       token = strsep(&t2, sep);
-       printf(" Check: %s   \r\n", token);
-
+             }
 
 
 	   break;
