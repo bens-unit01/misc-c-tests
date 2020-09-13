@@ -14,6 +14,7 @@
 #include "string.h"
 #include "time.h"
 #include "stdbool.h"
+#include "stdarg.h"
 
 typedef unsigned char       UINT8;
 typedef unsigned char *     PUINT8;
@@ -37,7 +38,7 @@ int testGpsParsing(void);
 int testFilter(void);
 int testCrc(void);
 int testCalcInt(void);
-int testParsingAce(void);
+int testParsingAce(char* fmt, ...);
 
 
 bool GPSPointConvertUTCToUNIX(PUINT8 pu8UTCDate, PUINT8 pu8UTCTime, PUINT32 pu32Unix);
@@ -55,7 +56,7 @@ int main(void) {
 //	testFilter();
 //	testCrc();
 //	testCalcInt();
-	testParsingAce();
+	testParsingAce(" -- %d %d \r\n", 20, 21);
 }
 
 int testCalcInt(void){
@@ -116,52 +117,45 @@ void aceParseData(char* in)
    {
    case 0 :
 	   // Time synchronization record
+	   printf("case 0: ------\n");
        token = strsep(&szInputString, szSeparator);
-       printf(" Version: %s   \r\n", token);
+       printf(" (Version: %s", token);
 
        token = strsep(&szInputString, szSeparator);
-       printf(" SysTime: %s   \r\n", token);
+       printf(" SysTime: %s", token);
 
        token = strsep(&szInputString, szSeparator);
-       printf(" SysDate: %s   \r\n", token);
+       printf(" SysDate: %s", token);
 
        token = strsep(&szInputString, szSeparator);
-       printf(" Source: %s   \r\n", token);
+       printf(" Source: %s) \r\n", token);
 
-       token = strsep(&szInputString, szSeparator);
-       printf(" check: %s   \r\n", token);
-
-
-       token = strsep(&szInputString, szSeparator);
 	   break;
    case 1 :
 	   // Standard header record
 	   printf("case 1: ------\n");
 
        token = strsep(&szInputString, szSeparator);
-       printf(" Version: %s   \r\n", token);
+       printf("(Version: %s", token);
 
        token = strsep(&szInputString, szSeparator);
-       printf(" SysTime: %s   \r\n", token);
+       printf(" SysTime: %s", token);
 
        token = strsep(&szInputString, szSeparator);
-       printf(" SysDate: %s   \r\n", token);
+       printf(" SysDate: %s", token);
 
 
        token = strsep(&szInputString, szSeparator);
-       printf(" Source: %s   \r\n", token);
+       printf(" Source: %s", token);
 
        token = strsep(&szInputString, szSeparator);
-       printf(" ManufID: %s   \r\n", token);
+       printf(" ManufID: %s", token);
 
        token = strsep(&szInputString, szSeparator);
-       printf(" EquipID: %s   \r\n", token);
+       printf(" EquipID: %s", token);
 
        token = strsep(&szInputString, szSeparator);
-       printf(" DriverID: %s   \r\n", token);
-
-       token = strsep(&szInputString, szSeparator);
-       printf(" Check: %s   \r\n", token);
+       printf(" DriverID: %s) \r\n", token);
 
 	   break;
    case 8 :
@@ -171,7 +165,10 @@ void aceParseData(char* in)
              printf("(ManufID: %s ", token);
 
              token = strsep(&szInputString, szSeparator);
-             printf("EquipID: %s ", token);
+             char equipmentId[15];
+             strcpy((char *) equipmentId, token);
+             int stlen = strlen(token);
+             printf("EquipID: %s %s %d ", token, equipmentId, stlen);
 
              token = strsep(&szInputString, szSeparator);
              token = strsep(&szInputString, szSeparator);
@@ -243,10 +240,26 @@ void aceParseData(char* in)
 
              token = strsep(&szInputString, szSeparator);
              printf("SprErr: %s ", token);
+             bool bIsSprErr = (atoi(token) == 1)? true : false;
 
              token = strsep(&szInputString, szSeparator);
              printf("SprErrCode: %s ", token);
+             int resErr = 0;
+             if(bIsSprErr)
+             {
+            	 char* sep = "-";
+            	 char* tErrRank = strsep(&token, sep);
+            	 while(tErrRank != NULL)
+            	 {
+            	     tErrRank = strsep(&token, sep);
+            	     int rank = atoi(tErrRank);
+            	     rank--;
+                     resErr |= (0x01 << rank);
+            		 printf(" -- %s %d", tErrRank, resErr);
 
+            	 }
+             }
+             printf(" -- %d %x ", resErr, resErr);
              token = strsep(&szInputString, szSeparator);
              printf("SprErrRpt: %s ", token);
 
@@ -283,6 +296,26 @@ void aceParseData(char* in)
              token = strsep(&szInputString, szSeparator);
              token = strsep(&szInputString, szSeparator);
              printf("FreeDef1: %s ", token);
+		     char szFreeDef1[11];
+		     strcpy((char *)szFreeDef1, token);
+             char hardwareVersion[4]= {0};
+             char szFirmwareversion[6]= {0};
+		     if (strlen(token) == 10)
+		     {
+               hardwareVersion[0] = szFreeDef1[8];
+               hardwareVersion[1] = '.';
+               hardwareVersion[2] = szFreeDef1[9];
+
+           	// Setting the firmware version
+               szFirmwareversion[0] = szFreeDef1[3];
+           	   szFirmwareversion[1] = '.';
+               szFirmwareversion[2] = szFreeDef1[4];
+               szFirmwareversion[3] = '.';
+               szFirmwareversion[4] = szFreeDef1[6];
+               szFirmwareversion[5] = '\0';
+
+		     }
+             printf("FreeDef1: %s %s %s ", token, hardwareVersion, szFirmwareversion);
 
              token = strsep(&szInputString, szSeparator);
              char szFreeDef2[25];
@@ -327,7 +360,7 @@ void aceParseData(char* in)
 
 }
 
-int testParsingAce(void)
+int testParsingAce(char* fmt, ...)
 {
 
 
@@ -408,9 +441,12 @@ int testParsingAce(void)
 	}
 #endif
 
+#define T_PRS
+#ifdef T_PRS
    char buf0[] = {"0;10;1556036;0521132;5"};
    char buf1[] = {"1;10;1556036;0521132;5;aceelectronic.ca;0000783FFF24;8888888888888888"};
    char buf2[] = {"8;aceelectronic.ca;0000783FFF24;;5;1617088;0521132;0;;1.0;;30;8;;;;;;20;0;2462;;;246;5394375;;1910;;36;0;;;;;;;02MAT A;;;;;;;;;;;;;;;;U3V46R0H21;M2-G0-DP1-DS1-SS00OFF"};
+   char buf3[] = {"8;aceelectronic.ca;0000783FFF24;;5;1617088;0521132;0;;1.0;;30;8;;;;;;20;0;2462;;;246;5394375;;1910;;36;1;1-2-13;01OVS-02CVOR;;;;;02MAT A;;;;;;;;;;;;;;;;U3V46R0H21;M2-G0-DP1-DS1-SS00OFF"};
    puts("Ace parsing test - unit tests ... \r\n");
    printf("buf0: %s \n", buf0);
    printf("buf1: %s \n", buf1);
@@ -419,7 +455,31 @@ int testParsingAce(void)
    aceParseData((char *)buf0);
    aceParseData((char *)buf1);
    aceParseData((char *)buf2);
+   aceParseData((char *)buf3);
+#endif
 
+//#define T_VSP
+#ifdef T_VSP
+
+    printf("Test vsnprintf ... \r\n");
+
+
+    UINT8 puNewDataStart[30] = "..";
+    va_list ap;
+    va_start (ap, fmt);
+    const int nFormattingResult = vsnprintf((char*)(puNewDataStart + 1), 30, "----- %d %d", ap);
+    printf(puNewDataStart);
+    printf("      %d \r\n", nFormattingResult);
+    printf("   strlen:  %d \r\n", strlen((char *)puNewDataStart));
+    printf("   strlen:  %d \r\n", strlen((char *)fmt));
+    va_end(ap);
+
+#endif
+
+/*    int a1 = 0;
+    a1 |= 0x01 << 12;
+    printf("-- %d", a1);
+*/
 	return 1;
 }
 
