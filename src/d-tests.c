@@ -29,20 +29,35 @@ typedef signed short int    INT16;
 #define RTC_SECONDS_PER_HOUR				3600
 #define RTC_SECONDS_PER_DAY				86400
 #define RTC_SECONDS_PER_YEAR				31536000
+#define IN
+#define OUT
+#define INOUT
+#define GET_UNITS_STR(i)  ((i % 10) + '0')
+#define GET_TENS_STR(i) ((((i % 100)- (i %10)) / 10) + '0')
 static INT16 const RTC_DAYS_PER_MONTH[12]		= { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 #define MODEM_GPS_ACQUIRE_PRESENTER		        "$GPSACP:"
 // $GPRMC,000231.42,A,4829.0005,N,00022.0016,E,0.16,212.28,220899,,,A*59
 
-int testGpsParsing(void);
 int testFilter(void);
 int testCrc(void);
 int testCalcInt(void);
 int testParsingAce(char* fmt, ...);
+int testFausseAlerteVitesse(void);
+int testGpsParsing(void);
+int testGpsPUBXParsing(void);
 
 
+
+// private functions
 bool GPSPointConvertUTCToUNIX(PUINT8 pu8UTCDate, PUINT8 pu8UTCTime, PUINT32 pu32Unix);
 void getCorrectedDate(char * utcDate);
+static bool gpsPointStringExtractToken(IN const char* pszTokenStart,
+                                       OUT const char** ppszNextToken,
+                                       OUT char* pszTokenDestination,
+                                       IN unsigned int uDestinationSize);
+
+
 
 typedef struct
 {
@@ -52,11 +67,13 @@ typedef struct
 
 int main(void) {
 
-// 	testGpsParsing();
 //	testFilter();
 //	testCrc();
 //	testCalcInt();
-	testParsingAce(" -- %d %d \r\n", 20, 21);
+//	testParsingAce(" -- %d %d \r\n", 20, 21);
+//	testFausseAlerteVitesse();
+// 	testGpsParsing();
+    testGpsPUBXParsing();
 }
 
 int testCalcInt(void){
@@ -103,6 +120,20 @@ char * __strsep (char **stringp, const char *delim)
   return begin;
 }
 
+UINT8 ToolsPutArrayToBuffer(OUT UINT8* pu8BuffOut,
+                              IN const UINT8* pu8Data,
+                              IN UINT8 u8Length)
+{
+   UINT8 i = 0;
+
+   for(i = 0; i < u8Length; i++)
+   {
+      pu8BuffOut[i] = pu8Data[i];
+   }
+
+   return i;
+}
+
 void aceParseData(char* in)
 {
    char* szInputString = in;
@@ -112,6 +143,11 @@ void aceParseData(char* in)
    int pr = atoi(token);
    UINT8 u8ComposedParams1 = 0;
    UINT8 u8ComposedParams2 = 0;
+   char szEquipmentId[15] = {0};
+   char szHardwareVersion[4]= {0};
+   char szFirmwareversion[6]= {0};
+   char szFreeDef1[11];
+
 
    switch(pr)
    {
@@ -165,12 +201,15 @@ void aceParseData(char* in)
              printf("(ManufID: %s ", token);
 
              token = strsep(&szInputString, szSeparator);
-             char equipmentId[15];
-             strcpy((char *) equipmentId, token);
+             strcpy((char *) szEquipmentId, token);
              int stlen = strlen(token);
-             printf("EquipID: %s %s %d ", token, equipmentId, stlen);
+             printf("EquipID: %s %s %d ", token, szEquipmentId, stlen);
 
              token = strsep(&szInputString, szSeparator);
+             if(*token == '\0')
+             {
+            	printf("test null ...\r\n");
+             }
              token = strsep(&szInputString, szSeparator);
              printf("Source: %s ", token);
 
@@ -296,15 +335,12 @@ void aceParseData(char* in)
              token = strsep(&szInputString, szSeparator);
              token = strsep(&szInputString, szSeparator);
              printf("FreeDef1: %s ", token);
-		     char szFreeDef1[11];
 		     strcpy((char *)szFreeDef1, token);
-             char hardwareVersion[4]= {0};
-             char szFirmwareversion[6]= {0};
-		     if (strlen(token) == 10)
+	         if (strlen(token) == 10)
 		     {
-               hardwareVersion[0] = szFreeDef1[8];
-               hardwareVersion[1] = '.';
-               hardwareVersion[2] = szFreeDef1[9];
+               szHardwareVersion[0] = szFreeDef1[8];
+               szHardwareVersion[1] = '.';
+               szHardwareVersion[2] = szFreeDef1[9];
 
            	// Setting the firmware version
                szFirmwareversion[0] = szFreeDef1[3];
@@ -315,7 +351,7 @@ void aceParseData(char* in)
                szFirmwareversion[5] = '\0';
 
 		     }
-             printf("FreeDef1: %s %s %s ", token, hardwareVersion, szFirmwareversion);
+             printf("FreeDef1: %s %s %s ", token, szHardwareVersion, szFirmwareversion);
 
              token = strsep(&szInputString, szSeparator);
              char szFreeDef2[25];
@@ -357,6 +393,35 @@ void aceParseData(char* in)
 	   printf("not supported \r\n");
 	   break;
    }
+
+
+   if(pr == 8)
+   	{
+   		UINT8 puDataToSend[45] = {0};
+   		int index = 0;
+   		puDataToSend[0] = 0x00; // Ace manufacturer ID
+   		puDataToSend[1] = strlen((char *) szEquipmentId);
+   		ToolsPutArrayToBuffer((UINT8*)puDataToSend + 2, (UINT8*)szEquipmentId, puDataToSend[1]);
+   		index = puDataToSend[1] + 2;
+   		puDataToSend[index] = strlen((char *) szHardwareVersion);
+   		index++;
+   		ToolsPutArrayToBuffer((UINT8*)puDataToSend + index, (UINT8*)szHardwareVersion, puDataToSend[index -1]);
+
+   		index += puDataToSend[index -1];
+   		puDataToSend[index] = strlen((char *) szFirmwareversion);
+   		index++;
+   		ToolsPutArrayToBuffer((UINT8*)puDataToSend + index, (UINT8*)szFirmwareversion, puDataToSend[index -1]);
+
+   	    index += puDataToSend[index -1];
+   		puDataToSend[index] = strlen((char *) szFreeDef1);
+   		index++;
+   		ToolsPutArrayToBuffer((UINT8*)puDataToSend + index, (UINT8*)szFreeDef1, puDataToSend[index -1]);
+
+
+   		printf("--- puDataToSend: %s \r\n", puDataToSend);
+
+   	}
+
 
 }
 
@@ -483,6 +548,66 @@ int testParsingAce(char* fmt, ...)
 	return 1;
 }
 
+
+
+// constantes de testFausseAlerteVitesse
+#define OVERSPEED_DBG_DATA_SIZE                         120
+#define OVERSPEED_SPEED_HISTORY_SIZE                    10
+#define OVERSPEED_SPEED_INVALID                         0xFF
+
+int testFausseAlerteVitesse(void){
+	 printf("Test calcul indexe ...\n");
+	      int u8TmpSpeed = 0;
+	      int u8MaxSpeedIdx = 0;
+	      int u8MinSpeed = 200;
+	      int u8MaxSpeed = 0;
+	      int u8CurrentIndex = 99;
+	      int auSpeedHistory[] = { 41, 41,  41,  42,  42,  42,  42,  42,  43,  43,  43,  43,  43,  43,  42,  41,  40,  39,  38,  37,  36,  35,  33,  32,  29,  27,  24,  23,  23,  21,  19,  16,  13,  10,   7 ,  5 ,  2 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  1 ,  1 ,  1 ,  3 ,  7 , 10,  13,  16,  19,  21,  23,  24,  26,  28,  29,  31,  31,  33,  34,  35,  36,  37,  37,  38,  39,  40,  40,  40,  40,  40,  37,  34,  34,  31,  27,  23,  19,  15,  10,   6 ,  5 ,  5 ,  5 ,  4 ,  1,  30 , 12,  19,  25,  25,  30,  34,  38,  42,  45,  48,  51,  53,  56,  56,  57,  57,  58,  58,  58,  58,  58,  58,  58,  58,  58,  58,  57,  57};
+	   /* for(int i = 0; i < 120; i++)
+	    {
+	        printf(" %d %d \n", auSpeedHistory[i], i);
+	    }*/
+
+	       int uOldestHistoryIndex = (OVERSPEED_DBG_DATA_SIZE + u8CurrentIndex - (OVERSPEED_SPEED_HISTORY_SIZE - 1))
+	            % OVERSPEED_DBG_DATA_SIZE;
+	      for(int i = 0; i < OVERSPEED_SPEED_HISTORY_SIZE; i++)
+	      {
+	          u8TmpSpeed = auSpeedHistory[(uOldestHistoryIndex + i) % OVERSPEED_DBG_DATA_SIZE];
+	         if(u8TmpSpeed == OVERSPEED_SPEED_INVALID)
+	         {
+	            u8MaxSpeed = u8TmpSpeed;
+	            printf("loop exit !!\n");
+	            break;
+	         }
+	         else
+	         {
+	            if(u8TmpSpeed <=u8MinSpeed)
+	            {
+	               u8MinSpeed = u8TmpSpeed;
+	               // We make sure to take the maximum speed that came after the minimum speed
+	               u8MaxSpeed = 0;
+	               u8MaxSpeedIdx = 0;
+	            }
+
+	            // We use '>=' to make sure we are taking the last occurrence
+	            // of the maximum speed.
+	            if(u8TmpSpeed >= u8MaxSpeed)
+	            {
+	               u8MaxSpeed = u8TmpSpeed;
+	               u8MaxSpeedIdx = i;
+	            }
+	         }
+	         printf(" u8TmpSpeed %d %d\n", u8TmpSpeed, i);
+	      }
+	      printf(" max: %d %d, min: %d \n", u8MaxSpeed, u8MaxSpeedIdx, u8MinSpeed);
+	      if((u8MaxSpeed == OVERSPEED_SPEED_INVALID) ||(((u8MaxSpeed - u8MinSpeed) >= 37) && (u8MaxSpeedIdx == (OVERSPEED_SPEED_HISTORY_SIZE - 1))))
+	      {
+	        // bIsGpsStable = false;
+	         printf("GPS unstable, holding the state for 2 min\n");
+	      }
+
+	    return 0;
+}
 int testFilter(void){
 
 	float fFuelLevelFilterFast = 67.0;
@@ -525,6 +650,7 @@ unsigned short crc16(const unsigned char *buf, unsigned long count)
         printf("\n ---------------- %d %d \n", j, k);
         return crc;
 }
+
 
 void VimsAsciiToHex(PUINT8 pu8RxData, PUINT8 pu8Size)
 {
@@ -711,21 +837,137 @@ int testGpsParsing(void)
 		printf("null \r\n");
 	}
 
-//    getCorrectedDate((char *) u8UTCDate);
+    //getCorrectedDate((char *) u8UTCDate);
     getCorrectedDate("0230805");
     getCorrectedDate("30805");
     getCorrectedDate("");
-    printf("final result %s \r\n", u8UTCDate);
+    printf("final result %s %s\r\n", u8UTCDate, u8UTCTime);
 
 
     UINT32 u32UnixTimestamp = 0;
 
     GPSPointConvertUTCToUNIX(u8UTCDate, u8UTCTime, &u32UnixTimestamp);
+    printf("Unix timestamp 01: %u \r\n", (unsigned int)u32UnixTimestamp);
 
-    printf("Unix timestamp : %u \r\n", (unsigned int)u32UnixTimestamp);
+    GPSPointConvertUTCToUNIX("200121", "165249.000", &u32UnixTimestamp);
+    printf("Unix timestamp 02: %u \r\n", (unsigned int)u32UnixTimestamp);
+
+    int year = 2021;
+    int month = 1;
+    int day = 20;
+    int hours = 16;
+    int min = 52;
+    int sec = 49;
+
+    char szDate[7] = {'\0'};  // Date format ddmmyy
+    szDate[5] = GET_UNITS_STR(year);
+    szDate[4] = GET_TENS_STR(year);
+    szDate[3] = GET_UNITS_STR(month);
+    szDate[2] = GET_TENS_STR(month);
+    szDate[1] = GET_UNITS_STR(day);
+    szDate[0] = GET_TENS_STR(day);
+
+    char szTime[7] = {'\0'};  // Time format hhmmss
+    szTime[5] = GET_UNITS_STR(sec);
+    szTime[4] = GET_TENS_STR(sec);
+    szTime[3] = GET_UNITS_STR(min);
+    szTime[2] = GET_TENS_STR(min);
+    szTime[1] = GET_UNITS_STR(hours);
+    szTime[0] = GET_TENS_STR(hours);
+
+
+    printf("Date : %s %s\n", szDate, szTime);
+    GPSPointConvertUTCToUNIX(szDate, szTime, &u32UnixTimestamp);
+    printf("Unix timestamp 03: %u \r\n", (unsigned int)u32UnixTimestamp);
+
 
 	return EXIT_SUCCESS;
 
+}
+
+int testGpsPUBXParsing(void)
+{
+    UINT8 u8Data[] = "$PUBX,00,155900.00,4531.82930,N,07329.44138,W,-8.970,G3,8.3,13,0.314,58.22,-0.072,,2.39,3.74,3.22,5,0,0*6D";
+    char output[200] = "\0";
+
+	printf("PUBX parsing test \n");
+	printf(" input: %s\n", u8Data);
+
+    const char* pszTokenStart = (char*)u8Data;
+
+    gpsPointStringExtractToken(pszTokenStart, &pszTokenStart, output, 6);
+    output[5] = '\0';
+    printf(" output: %s\n", output);
+
+    gpsPointStringExtractToken(pszTokenStart, &pszTokenStart, output, 3);
+    output[2] = '\0';
+    printf(" output: %s\n", output);
+
+    gpsPointStringExtractToken(pszTokenStart, &pszTokenStart, output, 10);
+    output[9] = '\0';
+    printf(" output: %s\n", output);
+
+    gpsPointStringExtractToken(pszTokenStart, &pszTokenStart, output, 11);
+    output[10] = '\0';
+    printf(" output: %s\n", output);
+
+    gpsPointStringExtractToken(pszTokenStart, &pszTokenStart, output, 2);
+    output[1] = '\0';
+    printf(" output: %s\n", output);
+
+
+
+return 1;
+}
+
+static bool gpsPointStringExtractToken(IN const char* pszTokenStart,
+                                       OUT const char** ppszNextToken,
+                                       OUT char* pszTokenDestination,
+                                       IN unsigned int uDestinationSize)
+{
+   bool bSuccess = false;
+
+   // Reset OUT parameters.
+   (*ppszNextToken) = NULL;
+   if (pszTokenDestination != NULL &&
+       uDestinationSize > 0)
+   {
+      (*pszTokenDestination) = '\0';
+   }
+
+   const char* pszNextSeparator = strchr(pszTokenStart, ',');
+
+   if (pszNextSeparator != NULL)
+   {
+      const unsigned int uTokenSize = pszNextSeparator - pszTokenStart;
+      if (uTokenSize < uDestinationSize)
+      {
+         if (uTokenSize > 0)
+         {
+            // Token is not empty.
+
+            if (pszTokenDestination != NULL &&
+                uDestinationSize > 0)
+            {
+               // Token is needed.
+
+               // This will add '\0' characters at the end.
+               strncpy(OUT pszTokenDestination,
+                       pszTokenStart,
+                       uTokenSize);
+            }
+         }
+
+         bSuccess = true;
+      }
+      // else, token is too big to fit; consider parsing error.
+
+      // Skip the separator.
+      (*ppszNextToken) = pszNextSeparator + 1;
+   }
+   // else, no next separator; means no next token.
+
+   return bSuccess;
 }
 
 
